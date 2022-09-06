@@ -4,6 +4,7 @@ import chisel3._
 import chisel3.iotesters.PeekPokeTester
 import org.scalatest.{Matchers, FlatSpec}
 import TestUtils._
+import FileUtils._
 
 class DotProdSpec extends FlatSpec with Matchers {
   import DotProdTests._
@@ -66,7 +67,7 @@ object DotProdTests {
 
     val inputsA = List.fill(c.elements)(rand.nextInt(10))
     val inputsB = List.fill(c.elements)(rand.nextInt(10))
-    println("runnign dot prod calc with inputs:")
+    println("running dot product calculation with inputs:")
     println(inputsA.mkString("[", "] [", "]"))
     println(inputsB.mkString("[", "] [", "]"))
     val expectedOutput = (for ((a, b) <- inputsA zip inputsB) yield a * b) sum
@@ -74,6 +75,8 @@ object DotProdTests {
     for(ii <- 0 until c.elements){
       poke(c.io.dataInA, inputsA(ii))
       poke(c.io.dataInB, inputsB(ii))
+      val data = peek(c.io.dataOut)
+      say(s"DATA: $data")
       if(ii == c.elements - 1)
         expect(c.io.dataOut, expectedOutput)
       step(1)
@@ -85,7 +88,7 @@ object DotProdTests {
 
     val inputsA = List.fill(c.elements)(rand.nextInt(10))
     val inputsB = List.fill(c.elements)(rand.nextInt(10))
-    println("runnign dot prod calc with inputs:")
+    println("running dot product calculation with inputs:")
     println(inputsA.mkString("[", "] [", "]"))
     println(inputsB.mkString("[", "] [", "]"))
     val expectedOutput = (for ((a, b) <- inputsA zip inputsB) yield a * b) sum
@@ -106,6 +109,9 @@ object DotProdTests {
     for(ii <- 0 until c.elements){
       poke(c.io.dataInA, inputsA(ii))
       poke(c.io.dataInB, inputsB(ii))
+      val data = peek(c.io.dataOut)
+      val valid = peek(c.io.outputValid)
+      say(s"DATA: $data VALID: $valid")
       if(ii == c.elements - 1){
         expect(c.io.dataOut, expectedOutput)
         expect(c.io.outputValid, true)

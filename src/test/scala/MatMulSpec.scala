@@ -4,6 +4,7 @@ import chisel3._
 import chisel3.iotesters.PeekPokeTester
 import org.scalatest.{Matchers, FlatSpec}
 import TestUtils._
+import FileUtils._
 
 class MatMulSpec extends FlatSpec with Matchers {
   import MatMulTests._

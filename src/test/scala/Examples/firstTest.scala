@@ -47,14 +47,25 @@ class MyModule(val incrementBy: Int) extends chisel3.Module {
     new Bundle {
       val dataIn  = Input(UInt(32.W))
       val dataOut = Output(UInt(32.W))
+      // An input can ONLY be defined in the IO bundle
+      val input = Input(UInt(32.W))
+      // Same for outputs
+      val output = Output(UInt(32.W))
     }
   )
 
   /**
     This is the body of MyModule
     */
+  io.dataOut := io.dataIn + incrementBy.U
 
-  io.dataOut := 0.U
+  val regA = RegInit(2.U(4.W))
+  val regB = RegInit(1.U(4.W))
+  regA := regB
+  regB := regA
+  io.dataOut := regA
+
+  io.output := io.input + incrementBy.U * io.dataOut
 
   // The commented code is supplied so that you should have an idea of what you should
   // end up with when you're through the introductionary section.
@@ -81,6 +92,32 @@ class TestRunner(c: MyModule) extends chisel3.iotesters.PeekPokeTester(c)  {
   /**
     This is the body of the TestRunner
     */
+
+  val o = peek(c.io.dataOut)
+  val oo = peek(c.io.output)
+  say(s"observed state: $o, $oo")
+
+  step(1)
+  val o1 = peek(c.io.dataOut)
+  val oo1 = peek(c.io.output)
+  say(s"observed state after step: $o1, $oo1")
+
+  poke(c.io.dataIn, 4)
+  poke(c.io.input, 4)
+  step(1)
+  val o2 = peek(c.io.dataOut)
+  val oo2 = peek(c.io.output)
+  say(s"observed state after poking: $o2, $oo2")
+
+  for(ii <- 0 until 10){
+    poke(c.io.dataIn, ii.U)
+    poke(c.io.input, ii.U)
+    step(1)
+    val o3 = peek(c.io.dataOut)
+    val oo3 = peek(c.io.output)
+    say(s"observed state at iteration $ii: $o3, $oo3")
+    
+  }
 
   // The commented code is supplied so that you should have an idea of what you should
   // end up with when you're through the introductionary section.

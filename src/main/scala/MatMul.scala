@@ -30,15 +30,36 @@ class MatMul(val rowDimsA: Int, val colDimsA: Int) extends MultiIOModule {
   val matrixB     = Module(new Matrix(rowDimsA, colDimsA)).io
   val dotProdCalc = Module(new DotProd(colDimsA)).io
 
-  matrixA.dataIn      := 0.U
-  matrixA.rowIdx      := 0.U
-  matrixA.colIdx      := 0.U
-  matrixA.writeEnable := false.B
 
-  matrixB.rowIdx      := 0.U
-  matrixB.colIdx      := 0.U
-  matrixB.dataIn      := 0.U
-  matrixB.writeEnable := false.B
+  val (counter, wrap) = Counter(true.B, rowDimsA * colDimsA)
+  val state = RegInit(false.B)
+
+  when(wrap) {
+    state := true.B
+    matrixA.writeEnable := false.B
+    matrixB.writeEnable := false.B
+  } 
+  
+  // Setup
+  matrixA.rowIdx := counter / colDimsA.U
+  matrixA.colIdx := counter % colDimsA.U
+  matrixA.dataIn := io.dataInA
+  matrixA.writeEnable := true.B
+
+  matrixB.rowIdx := counter / colDimsA.U
+  matrixB.colIdx := counter % colDimsA.U
+  matrixB.dataIn := io.dataInB
+  matrixB.writeEnable := true.B
+
+  // Execution
+  when(state) {
+    
+    // Setup
+    dotProdCalc.dataInA := 0.U
+    dotProdCalc.dataInB := 0.U
+  
+    
+  }
 
   dotProdCalc.dataInA := 0.U
   dotProdCalc.dataInB := 0.U
