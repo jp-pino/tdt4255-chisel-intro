@@ -29,43 +29,60 @@ class MatMul(val rowDimsA: Int, val colDimsA: Int) extends MultiIOModule {
   val matrixA     = Module(new Matrix(rowDimsA, colDimsA)).io
   val matrixB     = Module(new Matrix(rowDimsA, colDimsA)).io
   val dotProdCalc = Module(new DotProd(colDimsA)).io
+  val controller  = Module(new Controller(rowDimsA, colDimsA)).io
 
-
-  val (counter, wrap) = Counter(true.B, rowDimsA * colDimsA)
-  val state = RegInit(false.B)
-
-  when(wrap) {
-    state := true.B
-    matrixA.writeEnable := false.B
-    matrixB.writeEnable := false.B
-  } 
-  
   // Setup
-  matrixA.rowIdx := counter / colDimsA.U
-  matrixA.colIdx := counter % colDimsA.U
-  matrixA.dataIn := io.dataInA
-  matrixA.writeEnable := true.B
+  matrixA.writeEnable := !controller.state
+  matrixB.writeEnable := !controller.state
 
-  matrixB.rowIdx := counter / colDimsA.U
-  matrixB.colIdx := counter % colDimsA.U
+  matrixA.dataIn := io.dataInA
   matrixB.dataIn := io.dataInB
-  matrixB.writeEnable := true.B
+
+  matrixA.rowIdx := controller.rowIdx
+  matrixA.colIdx := controller.colIdx
+
+  matrixB.rowIdx := controller.rowIdx
+  matrixB.colIdx := controller.colIdx
 
   // Execution
-  when(state) {
-    
-    // Setup
-    dotProdCalc.dataInA := 0.U
-    dotProdCalc.dataInB := 0.U
-  
-    
-  }
-
   dotProdCalc.dataInA := 0.U
   dotProdCalc.dataInB := 0.U
 
-  io.dataOut := 0.U
-  io.outputValid := false.B
+  printf("Controller state: %d\n", controller.state)
+
+  when(controller.state) {
+    val row = RegInit(UInt(8.W), 255.U) // Mat A
+    val col = RegInit(UInt(8.W), 0.U) // Mat B
+    val ii = RegInit(UInt(8.W), 0.U)  // DotProduct iterator
+
+    matrixA.rowIdx := row
+    matrixB.rowIdx := col
+
+    matrixB.colIdx := ii
+    matrixA.colIdx := ii
+
+    printf("V? %d | [ %d|%d ] ii: %d (%d, %d): %d <-> %d | %d\n", dotProdCalc.outputValid, rowDimsA.U, colDimsA.U, ii, row, col, matrixA.dataOut, matrixB.dataOut, dotProdCalc.dataOut)
+    
+    dotProdCalc.dataInA := matrixA.dataOut
+    dotProdCalc.dataInB := matrixB.dataOut
+
+    ii := ii + 1.U
+    when(ii + 1.U === colDimsA.U ) {
+      ii := 0.U
+      col := col + 1.U
+      when (col + 1.U === rowDimsA.U) {
+        col := 0.U
+        row := row + 1.U
+        when (row + 1.U === rowDimsA.U) {
+          row := 0.U
+        }
+      }
+    }
+    
+  } 
+
+  io.dataOut := dotProdCalc.dataOut
+  io.outputValid := dotProdCalc.outputValid && controller.state
 
 
   debug.myDebugSignal := false.B

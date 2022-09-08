@@ -34,9 +34,12 @@ class Matrix(val rowsDim: Int, val colsDim: Int) extends Module {
     when(io.writeEnable && io.rowIdx === ii.U) {
       rows(ii).dataIn := io.dataIn
       rows(ii).writeEnable := true.B
+      // printf("I (%d, %d): %d\n", ii.U, io.colIdx, io.dataIn)
     } 
   }
 
+
+  // printf("O (%d, %d): %d\n", io.rowIdx, io.colIdx, rows(io.rowIdx).dataOut)
   // When writeEnable is high, use rowIdx to select which row you want to operate on.
   io.dataOut := rows(io.rowIdx).dataOut
 }
